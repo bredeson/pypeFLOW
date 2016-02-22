@@ -46,16 +46,23 @@ logger = logging.getLogger(__name__)
 
 class TaskExecutionError(PypeError):
     pass
+
+
 class TaskTypeError(PypeError):
     pass
+
+
 class TaskFailureError(PypeError):
     pass
+
+
 class LateTaskFailureError(PypeError):
     pass
 
+
 class PypeNode(object):
     """ 
-    Representing a node in the dependence DAG. 
+    Represents a node in the dependence DAG. 
     """
 
     def __init__(self, obj):
@@ -63,35 +70,45 @@ class PypeNode(object):
         self._outNodes = set()
         self._inNodes = set()
 
+
     def addAnOutNode(self, obj):
         self._outNodes.add(obj)
         
+
     def addAnInNode(self, obj):
         self._inNodes.add(obj)
+
 
     def removeAnOutNode(self, obj):
         self._outNodes.remove(obj)
 
+
     def removeAnInNode(self, obj):
         self._inNodes.remove(obj)
+
 
     @property
     def inDegree(self):
         return len(self._inNodes)
 
+
     @property
     def outDegree(self):
         return len(self._outNodes)
     
+
     @property
     def depth(self):
         if self.inDegree == 0:
             return 1
+
         return 1 + max([ node.depth for node in self._inNodes ])
+
+
 
 class PypeGraph(object):
     """ 
-    Representing a dependence DAG with PypeObjects. 
+    Represents a dependence DAG with PypeObjects. 
     """
 
     def __init__(self, RDFGraph, subGraphNodes=None):
@@ -103,10 +120,10 @@ class PypeGraph(object):
         self._RDFGraph = RDFGraph
         self._allEdges = set()
         self._allNodes = set()
-        self.url2Node ={}
+        self.url2Node = {}
 
         for row in self._RDFGraph.query('SELECT ?s ?o WHERE {?s pype:prereq ?o . }', initNs=dict(pype=pypeNS)):
-            if subGraphNodes != None:
+            if subGraphNodes is not None:
                 if row[0] not in subGraphNodes: continue
                 if row[1] not in subGraphNodes: continue
             
@@ -126,9 +143,11 @@ class PypeGraph(object):
             self._allNodes.add( n2 )
             self._allEdges.add( anEdge )
             
+
     def __getitem__(self, url):
         """PypeGraph["URL"] ==> PypeNode"""
         return self.url2Node[url]
+
 
     def tSort(self): #return a topoloical sort node list
         """
@@ -137,7 +156,7 @@ class PypeGraph(object):
         """
         edges = self._allEdges.copy()
         
-        S = [x for x in self._allNodes if x.inDegree == 0]
+        S = [ x for x in self._allNodes if x.inDegree == 0 ]
         L = []
         while len(S) != 0:
             n = S.pop()
@@ -151,9 +170,12 @@ class PypeGraph(object):
                     S.append(m)
         
         if len(edges) != 0:
-            raise TaskExecutionError(" Circle detectd in the dependency graph ")
+            raise TaskExecutionError("Circle detected in the dependency graph")
+
         else:
-            return [x.obj for x in L]
+            return [ x.obj for x in L ]
+
+
                     
 class PypeWorkflow(PypeObject):
     """ 
@@ -200,8 +222,8 @@ class PypeWorkflow(PypeObject):
 
     def __init__(self, URL = None, **attributes ):
 
-        if URL == None:
-            URL = "workflow://" + __file__+"/%d" % id(self)
+        if URL is None:
+            URL = "workflow://" + __file__ + "/%d" % id(self)
 
         self._pypeObjects = {}
 
@@ -213,18 +235,22 @@ class PypeWorkflow(PypeObject):
     def addObject(self, obj):
         self.addObjects([obj])
 
+
     def addObjects(self, objs):
         """
-        Add data objects into the workflow. One can add also task object to the workflow using this method for
+        Add data objects to the workflow. One can add also task objects to the workflow using this method for
         non-threaded workflow.
         """
         for obj in objs:
             if obj.URL in self._pypeObjects:
                 if id(self._pypeObjects[obj.URL]) != id(obj):
-                    raise PypeError, "Add different objects with the same URL %s" % obj.URL
+                    raise PypeError("Add different objects with the same URL %s" % obj.URL)
+
                 else:
                     continue
+
             self._pypeObjects[obj.URL] = obj
+
 
     def addTask(self, taskObj):
         self.addTasks([taskObj])
@@ -232,7 +258,7 @@ class PypeWorkflow(PypeObject):
 
     def addTasks(self, taskObjs):
         """
-        Add tasks into the workflow. The dependent input and output data objects are added automatically too. 
+        Add tasks to the workflow. The dependent input and output data objects are added automatically too. 
         It sets the message queue used for communicating between the task thread and the main thread. One has
         to use addTasks() or addTask() to add task objects to a threaded workflow.
         """
@@ -250,6 +276,7 @@ class PypeWorkflow(PypeObject):
                             taskObj.mutableDataObjs.values() :
                     if isinstance(dObj, PypeSplittableLocalFile):
                         self.addObjects([dObj._completeFile])
+
                     self.addObjects([dObj])
 
                 self.addObject(taskObj)
@@ -257,12 +284,14 @@ class PypeWorkflow(PypeObject):
             
     def removeTask(self, taskObj):
         self.removeTasks([taskObj])
+
         
     def removeTasks(self, taskObjs ):
         """
         Remove tasks from the workflow.
         """
         self.removeObjects(taskObjs)
+
             
     def removeObjects(self, objs):
         """
@@ -271,15 +300,16 @@ class PypeWorkflow(PypeObject):
         for obj in objs:
             if obj.URL in self._pypeObjects:
                 del self._pypeObjects[obj.URL]
+
             else:
-                raise PypeError, "Unable to remove %s from the graph. (Object not found)" % obj.URL
+                raise PypeError("Unable to remove %s from the graph. (Object not found)" % obj.URL)
+
 
     def updateURL(self, oldURL, newURL):
         obj = self._pypeObjects[oldURL]
         obj._updateURL(newURL)
         self._pypeObjects[newURL] = obj
         del self._pypeObjects[oldURL]
-
 
             
     @property
@@ -288,8 +318,10 @@ class PypeWorkflow(PypeObject):
         graph = Graph()
         for URL, obj in self._pypeObjects.iteritems():
             for s,p,o in obj._RDFGraph:
-                graph.add( (s,p,o) )
+                graph.add( (s, p, o) )
+
         return graph
+
 
     def setReferenceRDFGraph(self, fn):
         self._referenceRDFGraph = Graph()
@@ -298,6 +330,7 @@ class PypeWorkflow(PypeObject):
         for URL, md5digest in refMD5s:
             obj = self._pypeObjects[str(URL)]
             obj.setReferenceMD5(md5digest)
+
 
     def _graphvizDot(self, shortName=False):
         graph = self._RDFGraph
@@ -309,37 +342,47 @@ class PypeWorkflow(PypeObject):
             URLParseResult = urlparse(URL)
             if URLParseResult.scheme not in shapeMap:
                 continue
+
             else:
                 shape = shapeMap[URLParseResult.scheme]
                 color = colorMap[URLParseResult.scheme]
 
                 s = URL
-                if shortName == True:
+                if shortName is True:
                     s = URLParseResult.scheme + "://..." + URLParseResult.path.split("/")[-1] 
+
                 dotStr.write( '"%s" [shape=%s, fillcolor=%s, style=filled];\n' % (s, shape, color))
 
         for row in graph.query('SELECT ?s ?o WHERE {?s pype:prereq ?o . }', initNs=dict(pype=pypeNS)):
             s, o = row
-            if shortName == True:
-                    s = urlparse(s).scheme + "://..." + urlparse(s).path.split("/")[-1] 
-                    o = urlparse(o).scheme + "://..." + urlparse(o).path.split("/")[-1] 
+            if shortName is True:
+                s = urlparse(s).scheme + "://..." + urlparse(s).path.split("/")[-1] 
+                o = urlparse(o).scheme + "://..." + urlparse(o).path.split("/")[-1] 
+
             dotStr.write( '"%s" -> "%s";\n' % (o, s))
+
         for row in graph.query('SELECT ?s ?o WHERE {?s pype:hasMutable ?o . }', initNs=dict(pype=pypeNS)):
             s, o = row
-            if shortName == True:
-                    s = urlparse(s).scheme + "://..." + urlparse(s).path.split("/")[-1] 
-                    o = urlparse(o).scheme + "://..." + urlparse(o).path.split("/")[-1] 
+            if shortName is True:
+                s = urlparse(s).scheme + "://..." + urlparse(s).path.split("/")[-1] 
+                o = urlparse(o).scheme + "://..." + urlparse(o).path.split("/")[-1] 
+
             dotStr.write( '"%s" -- "%s" [arrowhead=both, style=dashed ];\n' % (s, o))
+
         dotStr.write ("}")
+
         return dotStr.getvalue()
+
 
     @property
     def graphvizDot(self):
         return self._graphvizDot()
 
+
     @property
     def graphvizShortNameDot(self):
         return self._graphvizDot(shortName = True)
+
 
     @property
     def makeFileStr(self):
@@ -354,6 +397,7 @@ class PypeWorkflow(PypeObject):
             taskObj = self._pypeObjects[URL]
             if not hasattr(taskObj, "script"):
                 raise TaskTypeError("can not convert non shell script based workflow to a makefile") 
+
         makeStr = StringIO()
         for URL in self._pypeObjects.keys():
             URLParseResult = urlparse(URL)
@@ -362,14 +406,16 @@ class PypeWorkflow(PypeObject):
             inputFiles = taskObj.inputDataObjs
             outputFiles = taskObj.outputDataObjs
             #for oStr in [o.localFileName for o in outputFiles.values()]:
-            if 1:
+            if True:
                 oStr = " ".join( [o.localFileName for o in outputFiles.values()])
-
                 iStr = " ".join([i.localFileName for i in inputFiles.values()])
                 makeStr.write( "%s:%s\n" % ( oStr, iStr ) )
                 makeStr.write( "\t%s\n\n" % taskObj.script )
+
         makeStr.write("all: %s" %  " ".join([o.localFileName for o in outputFiles.values()]) )
+
         return makeStr.getvalue()
+
 
     @staticmethod
     def getSortedURLs(rdfGraph, objs):
@@ -378,12 +424,17 @@ class PypeWorkflow(PypeObject):
             for obj in objs:
                 if isinstance(obj, PypeSplittableLocalFile):
                     obj = obj._completeFile
+
                 for x in rdfGraph.transitive_objects(URIRef(obj.URL), pypeNS["prereq"]):
                     connectedPypeNodes.add(x)
+
             tSortedURLs = PypeGraph(rdfGraph, connectedPypeNodes).tSort( )
+
         else:
             tSortedURLs = PypeGraph(rdfGraph).tSort( )
+
         return tSortedURLs
+
 
     def refreshTargets(self, objs = [], callback = (None, None, None) ):
         """
@@ -394,38 +445,47 @@ class PypeWorkflow(PypeObject):
             obj = self._pypeObjects[URL]
             if not isinstance(obj, PypeTaskBase):
                 continue
+
             else:
                 obj()
                 obj.finalize()
+
         self._runCallback(callback)
+
         return True
 
-    def _runCallback(self, callback = (None, None, None ) ):
-        if callback[0] != None and callable(callback[0]):
+
+    def _runCallback(self, callback = (None, None, None) ):
+        if callback[0] is not None and callable(callback[0]):
             argv = []
             kwargv = {}
-            if callback[1] != None and isinstance( callback[1], type(list()) ):
+            if callback[1] is not None and isinstance( callback[1], type(list()) ):
                 argv = callback[1]
+
             else:
                 raise TaskExecutionError( "callback argument type error") 
 
-            if callback[2] != None and isinstance( callback[1], type(dict()) ):
+            if callback[2] is not None and isinstance( callback[1], type(dict()) ):
                 kwargv = callback[2]
+
             else:
                 raise TaskExecutionError( "callback argument type error") 
 
             callback[0](*argv, **kwargv)
 
-        elif callback[0] != None:
+        elif callback[0] is not None:
             raise TaskExecutionError( "callback is not callable") 
     
+
     @property
     def dataObjects( self ):
-        return [ o for o in self._pypeObjects.values( ) if isinstance( o, PypeDataObjectBase )]
+        return [ o for o in self._pypeObjects.values( ) if isinstance( o, PypeDataObjectBase ) ]
     
+
     @property
     def tasks( self ):
-        return [ o for o in self._pypeObjects.values( ) if isinstance( o, PypeTaskBase )]
+        return [ o for o in self._pypeObjects.values( ) if isinstance( o, PypeTaskBase ) ]
+
 
     @property
     def inputDataObjects(self):
@@ -435,8 +495,10 @@ class PypeWorkflow(PypeObject):
             r = graph.query('SELECT ?o WHERE {<%s> pype:prereq ?o .  }' % obj.URL, initNs=dict(pype=pypeNS))
             if len(r) == 0:
                 inputObjs.append(obj)
+
         return inputObjs
      
+
     @property
     def outputDataObjects(self):
         graph = self._RDFGraph
@@ -445,7 +507,10 @@ class PypeWorkflow(PypeObject):
             r = graph.query('SELECT ?s WHERE {?s pype:prereq <%s> .  }' % obj.URL, initNs=dict(pype=pypeNS))
             if len(r) == 0:
                 outputObjs.append(obj)
+
         return outputObjs
+
+
 
 def PypeMPWorkflow(URL = None, **attributes):
     """Factory for the workflow using multiprocessing.
@@ -456,6 +521,7 @@ def PypeMPWorkflow(URL = None, **attributes):
     return _PypeConcurrentWorkflow(URL=URL, thread_handler=th, messageQueue=mq, shutdown_event=se,
             attributes=attributes)
 
+
 def PypeThreadWorkflow(URL = None, **attributes):
     """Factory for the workflow using threading.
     """
@@ -464,6 +530,7 @@ def PypeThreadWorkflow(URL = None, **attributes):
     se = threading.Event()
     return _PypeConcurrentWorkflow(URL=URL, thread_handler=th, messageQueue=mq, shutdown_event=se,
             attributes=attributes)
+
 
 class _PypeConcurrentWorkflow(PypeWorkflow):
     """ 
@@ -475,6 +542,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
     CONCURRENT_THREAD_ALLOWED = 16
     MAX_NUMBER_TASK_SLOT = CONCURRENT_THREAD_ALLOWED
 
+
     @classmethod
     def setNumThreadAllowed(cls, nT, nS):
         """
@@ -483,12 +551,14 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
         cls.CONCURRENT_THREAD_ALLOWED = nT
         cls.MAX_NUMBER_TASK_SLOT = nS
 
+
     def __init__(self, URL, thread_handler, messageQueue, shutdown_event, attributes):
-        PypeWorkflow.__init__(self, URL, **attributes )
+        PypeWorkflow.__init__(self, URL, **attributes)
         self.thread_handler = thread_handler
         self.messageQueue = messageQueue
         self.shutdown_event = shutdown_event
         self.jobStatusMap = dict()
+
 
     def addTasks(self, taskObjs):
         """
@@ -511,26 +581,30 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
 
         PypeWorkflow.addTasks(self, taskObjs)
 
-    def refreshTargets(self, objs=None,
-                       callback=(None, None, None),
-                       updateFreq=None,
-                       exitOnFailure=True):
+
+    def refreshTargets(self, objs=None, 
+                       callback=(None, None, None), 
+                       updateFreq=None, exitOnFailure=True):
+
         if objs is None:
             objs = []
         task2thread = {}
+
         try:
             rtn = self._refreshTargets(task2thread, objs = objs, callback = callback, updateFreq = updateFreq, exitOnFailure = exitOnFailure)
             return rtn
+
         except:
             self.shutdown_event.set()
             logger.exception("Any exception caught in RefreshTargets() indicates an unrecoverable error. Shutting down...")
-            print
-            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            print "! Please wait for all threads / processes to terminate !"
-            print "! Also, maybe use 'ps' or 'qstat' to check all threads,!"
-            print "! processes and/or jobs are terminated cleanly.        !"
-            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            print()
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            print("! Please wait for all threads / processes to terminate !")
+            print("! Also, maybe use 'ps' or 'qstat' to check all threads,!")
+            print("! processes and/or jobs are terminated cleanly.        !")
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             sys.stdout.flush()
+
             th = self.thread_handler
             threads = list(task2thread.values())
             logger.warning("#tasks=%d, #alive=%d" %(len(threads), th.alive(threads)))
@@ -538,17 +612,17 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 while th.alive(threads):
                     th.join(threads, 2)
                     logger.warning("Now, #tasks=%d, #alive=%d" %(len(threads), th.alive(threads)))
+
             except (KeyboardInterrupt, SystemExit) as e:
                 logger.debug("SIGINT, trying to terminate any working processes.")
                 th.notifyTerminate(threads)
                 raise
+
             raise
 
 
-    def _refreshTargets(self, task2thread, objs,
-                        callback,
-                        updateFreq,
-                        exitOnFailure):
+    def _refreshTargets(self, task2thread, objs, callback, updateFreq, exitOnFailure):
+
         thread = self.thread_handler.create
 
         rdfGraph = self._RDFGraph # expensive to recompute, should not change during execution
@@ -560,7 +634,6 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
         logger.info("# of tasks in complete graph: %d" %(
             len(sortedTaskList),
             ))
-
         prereqJobURLMap = {}
 
         for URL, taskObj, tStatus in sortedTaskList:
@@ -587,7 +660,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
         succeededJobCount = 0
         jobsReadyToBeSubmitted = []
 
-        while 1:
+        while True:
 
             loopN += 1
             if not ((loopN - 1) & loopN):
@@ -606,10 +679,12 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 logger.debug(' preqs of %s:' %URL)
                 for u in prereqJobURLs:
                     logger.debug('  %s: %s' %(self.jobStatusMap[u], u))
+
                 if any(self.jobStatusMap[u] != "done" for u in prereqJobURLs):
                     # Note: If self.jobStatusMap[u] raises, then the sorting was wrong.
                     #logger.debug('Prereqs not done! %s' %URL)
                     continue
+
                 # Check for mutable collisions; delay task if any.
                 outputCollision = False
                 for dataObj in taskObj.mutableDataObjs.values():
@@ -619,8 +694,10 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                                 dataObj, dataObj.URL, mutableDataObjURL))
                             outputCollision = True
                             break
+
                 if outputCollision:
                     continue
+
                 # Check for illegal collisions.
                 if len(activeDataObjs) < 100:
                     # O(n^2) on active tasks, but pretty fast.
@@ -629,6 +706,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                             if dataObj.URL == activeDataObjURL and taskObj.URL != fromTaskObjURL:
                                 raise Exception("output collision detected for data object %r betw %r and %r" %(
                                     dataObj, dataObj.URL, activeDataObjURL))
+
                 # We use 'updatedTaskURLs' to short-circuit 'isSatisfied()', to avoid many stat-calls.
                 # Note: Sorting should prevent FileNotExistError in isSatisfied().
                 if not (set(prereqJobURLs) & updatedTaskURLs) and taskObj.isSatisfied():
@@ -640,11 +718,13 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                     successfullTask = self._pypeObjects[URL]
                     successfullTask.finalize()
                     continue
+
                 self.jobStatusMap[str(URL)] = "ready" # in case not all ready jobs are given threads immediately, to avoid re-stat
                 jobsReadyToBeSubmitted.append( (URL, taskObj) )
                 for dataObj in taskObj.outputDataObjs.values():
                     logger.debug( "add active data obj: %s" %(dataObj,))
                     activeDataObjs.add( (taskObj.URL, dataObj.URL) )
+
                 for dataObj in taskObj.mutableDataObjs.values():
                     logger.debug( "add mutable data obj: %s" %(dataObj,))
                     mutableDataObjs.add( (taskObj.URL, dataObj.URL) )
@@ -681,9 +761,10 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
 
             logger.debug( "Total # of running threads: %d; alive tasks: %d; sleep=%f" % (
                 threading.activeCount(), self.thread_handler.alive(task2thread.values()), sleep_time) )
+
             time.sleep(sleep_time)
-            if updateFreq != None:
-                elapsedSeconds = updateFreq if lastUpdate==None else (datetime.datetime.now()-lastUpdate).seconds
+            if updateFreq is not None:
+                elapsedSeconds = updateFreq if lastUpdate is None else (datetime.datetime.now()-lastUpdate).seconds
                 if elapsedSeconds >= updateFreq:
                     self._update( elapsedSeconds )
                     lastUpdate = datetime.datetime.now( )
@@ -707,8 +788,10 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                     successfullTask.finalize()
                     for o in successfullTask.outputDataObjs.values():
                         activeDataObjs.remove( (successfullTask.URL, o.URL) )
+
                     for o in successfullTask.mutableDataObjs.values():
                         mutableDataObjs.remove( (successfullTask.URL, o.URL) )
+
                 elif message in ["fail"]:
                     failedTask = self._pypeObjects[str(URL)]
                     nSubmittedJob -= 1
@@ -720,13 +803,17 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                     failedTask.finalize()
                     for o in failedTask.outputDataObjs.values():
                         activeDataObjs.remove( (failedTask.URL, o.URL) )
+
                     for o in failedTask.mutableDataObjs.values():
                         mutableDataObjs.remove( (failedTask.URL, o.URL) )
+
                 elif message in ["started, runflag: 1"]:
                     logger.info("Queued %s ..." %repr(URL))
+
                 elif message in ["started, runflag: 0"]:
                     logger.debug("Queued %s (already completed) ..." %repr(URL))
                     raise Exception('It should not be possible to start an already completed task.')
+
                 else:
                     logger.warning("Got unexpected message %r from URL %r." %(message, URL))
 
@@ -734,10 +821,10 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 logger.debug("task status: %r, %r, used slots: %d" % (str(u),str(s), self._pypeObjects[str(u)].nSlots))
 
             if failedJobCount != 0 and (exitOnFailure or succeededJobCount == 0):
-                raise TaskFailureError("Counted %d failure(s) with 0 successes so far." %failedJobCount)
+                raise TaskFailureError("Counted %d failure(s) with 0 successes so far." % failedJobCount)
 
 
-        for u,s in sorted(self.jobStatusMap.items()):
+        for u, s in sorted(self.jobStatusMap.items()):
             logger.debug("task status: %s, %r" % (u, s))
 
         self._runCallback(callback)
@@ -747,9 +834,11 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 failedJobCount, succeededJobCount))
         return True #TODO: There is no reason to return anything anymore.
     
+
     def _update(self, elapsed):
         """Can be overridden to provide timed updates during execution"""
         pass
+
 
     def _graphvizDot(self, shortName=False):
 
@@ -757,7 +846,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
         dotStr = StringIO()
         shapeMap = {"file":"box", "state":"box", "task":"component"}
         colorMap = {"file":"yellow", "state":"cyan", "task":"green"}
-        dotStr.write( 'digraph "%s" {\n rankdir=LR;' % self.URL)
+        dotStr.write('digraph "%s" {\n rankdir=LR;' % self.URL)
 
 
         for URL in self._pypeObjects.keys():
@@ -769,16 +858,18 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 color = colorMap[URLParseResult.scheme]
 
                 s = URL
-                if shortName == True:
+                if shortName is True:
                     s = URLParseResult.scheme + "://..." + URLParseResult.path.split("/")[-1] 
 
                 if URLParseResult.scheme == "task":
                     jobStatus = self.jobStatusMap.get(URL, None)
-                    if jobStatus != None:
+                    if jobStatus is not None:
                         if jobStatus == "fail":
                             color = 'red'
+
                         elif jobStatus == "done":
                             color = 'green'
+
                     else:
                         color = 'white'
                     
@@ -786,22 +877,29 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
 
         for row in graph.query('SELECT ?s ?o WHERE {?s pype:prereq ?o . }', initNs=dict(pype=pypeNS)):
             s, o = row
-            if shortName == True:
+            if shortName is True:
                 s = urlparse(s).scheme + "://..." + urlparse(s).path.split("/")[-1] 
                 o = urlparse(o).scheme + "://..." + urlparse(o).path.split("/")[-1] 
+
             dotStr.write( '"%s" -> "%s";\n' % (o, s))
+
         for row in graph.query('SELECT ?s ?o WHERE {?s pype:hasMutable ?o . }', initNs=dict(pype=pypeNS)):
             s, o = row
-            if shortName == True:
+            if shortName is True:
                     s = urlparse(s).scheme + "://..." + urlparse(s).path.split("/")[-1] 
                     o = urlparse(o).scheme + "://..." + urlparse(o).path.split("/")[-1] 
+
             dotStr.write( '"%s" -- "%s" [arrowhead=both, style=dashed ];\n' % (s, o))
+
         dotStr.write ("}")
+
         return dotStr.getvalue()
+
 
 # For a class-method:
 PypeThreadWorkflow.setNumThreadAllowed = _PypeConcurrentWorkflow.setNumThreadAllowed
 PypeMPWorkflow.setNumThreadAllowed = _PypeConcurrentWorkflow.setNumThreadAllowed
+
 
 class _PypeThreadsHandler(object):
     """Stateless method delegator, for injection.
@@ -810,8 +908,12 @@ class _PypeThreadsHandler(object):
         thread = threading.Thread(target=target)
         thread.daemon = True  # so it will terminate on exit
         return thread
+
+
     def alive(self, threads):
         return sum(thread.is_alive() for thread in threads)
+
+
     def join(self, threads, timeout):
         then = datetime.datetime.now()
         for thread in threads:
@@ -819,6 +921,8 @@ class _PypeThreadsHandler(object):
             if thread.is_alive():
                 to = max(0, timeout - (datetime.datetime.now() - then).seconds)
                 thread.join(to)
+
+
     def notifyTerminate(self, threads):
         """Assume these are daemon threads.
         We will attempt to join them all quickly, but non-daemon threads may
@@ -826,19 +930,27 @@ class _PypeThreadsHandler(object):
         """
         self.join(threads, 1)
 
+
+
 class _PypeProcsHandler(object):
     """Stateless method delegator, for injection.
     """
     def create(self, target):
         proc = multiprocessing.Process(target=target)
         return proc
+
+
     def alive(self, procs):
         return sum(proc.is_alive() for proc in procs)
+
+
     def join(self, procs, timeout):
         then = datetime.datetime.now()
         for proc in procs:
             if proc.is_alive():
                 proc.join((datetime.datetime.now() - then).seconds)
+
+
     def notifyTerminate(self, procs):
         """This can orphan sub-processes.
         """
@@ -847,8 +959,10 @@ class _PypeProcsHandler(object):
                 proc.terminate()
 
 
+
 def defaultOutputTemplate(fn):
     return fn + ".out"
+
 
 def applyFOFN( task_fun = None, 
                fofonFileName = None, 
@@ -865,6 +979,7 @@ def applyFOFN( task_fun = None,
     wf.MAX_NUMBER_TASK_SLOT = nproc
     wf.addTasks(tasks)
     wf.refreshTargets(exitOnFailure=False)
+
 
 
 if __name__ == "__main__":

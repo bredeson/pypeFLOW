@@ -37,6 +37,9 @@ import copy
 import sys
 
 PYTHONVERSION = sys.version_info[:2]
+if PYTHONVERSION  < (3,0):
+    range = xrange
+
 if PYTHONVERSION == (2,5):
     import simplejson as json
 else:
@@ -113,7 +116,7 @@ class PypeTaskBase(PypeObject):
         self._compareFunctions = kwargv.get("_compareFunctions", [ timeStampCompare ])
 
         for o in self.outputDataObjs.values():
-            if o.readOnly == True:
+            if o.readOnly is True:
                 raise PypeError, "Cannot assign read only data object %s for task %s" % (o.URL, self.URL) 
         
     @property
@@ -170,7 +173,7 @@ class PypeTaskBase(PypeObject):
         """
         if PYTHONVERSION == (2,5): #TODO(CD): Does this even work anymore?
             (args, varargs, varkw, defaults)  = inspect.getargspec(self._taskFun)
-            #print  (args, varargs, varkw, defaults)
+            #print(args, varargs, varkw, defaults)
         else:
             argspec = inspect.getargspec(self._taskFun)
             (args, varargs, varkw, defaults) = argspec.args, argspec.varargs, argspec.keywords, argspec.defaults
@@ -650,7 +653,7 @@ def PypeDistributibleTask(*argv, **kwargv):
         def taskFun(self):
             """make shell script using the template"""
             """run shell command"""
-            if distributed == True:
+            if distributed is True:
                 shellCmd = "qsub -sync y -S /bin/bash %s" % scriptToRun
             else:
                 shellCmd = "/bin/bash %s" % scriptToRun

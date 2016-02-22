@@ -50,6 +50,8 @@ import time
 
 pypeNS = Namespace("pype://v0.1/")
 
+
+
 class PypeError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)  # to make __repr__() show class name
@@ -57,11 +59,14 @@ class PypeError(Exception):
     def __str__(self):
         return repr(self.msg)
 
+
 class NotImplementedError(PypeError):
     pass
 
+
 class URLSchemeNotSupportYet(PypeError):
     pass
+
 
 class PypeObject(object):
 
@@ -85,12 +90,14 @@ class PypeObject(object):
                 if k not in self.__dict__:
                     self.__dict__[k] = v
 
+
     def _updateURL(self, newURL):
         URLParseResult = urlparse(self.URL)
         newURLParseResult = urlparse(newURL)
         if URLParseResult.scheme != newURLParseResult.scheme:
-            raise PypeError, "the URL scheme can not be changed for obj %s" % self.URL
+            raise PypeError("the URL scheme can not be changed for obj %s" % self.URL)
         self.URL = newURL
+
      
     @property 
     def _RDFGraph(self):
@@ -103,7 +110,6 @@ class PypeObject(object):
                 graph.add( ( URIRef(self.URL), pypeNS[k], URIRef(v.URL) ) )
         return graph
 
-
     
     @property
     def RDFXML(self):
@@ -114,7 +120,9 @@ class PypeObject(object):
 
         return self._RDFGraph.serialize() 
 
-def runShellCmd(args,**kwargs):
+
+
+def runShellCmd(args, **kwargs):
 
     """ 
     Utility function that runs a shell script command. 
@@ -122,7 +130,7 @@ def runShellCmd(args,**kwargs):
     from the shell command is returned
     """
 
-    p = Popen(args,**kwargs)
+    p = Popen(args, **kwargs)
     pStatus = None
     while 1:
         time.sleep(0.2)
@@ -130,6 +138,7 @@ def runShellCmd(args,**kwargs):
         if pStatus != None:
             break
     return pStatus
+
 
 def runSgeSyncJob(args):
 
