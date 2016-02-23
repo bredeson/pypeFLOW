@@ -56,16 +56,21 @@ class PypeError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)  # to make __repr__() show class name
         self.msg = msg
+
+
     def __str__(self):
         return repr(self.msg)
+
 
 
 class NotImplementedError(PypeError):
     pass
 
 
+
 class URLSchemeNotSupportYet(PypeError):
     pass
+
 
 
 class PypeObject(object):
@@ -86,7 +91,7 @@ class PypeObject(object):
             raise URLSchemeNotSupportYet("%s is not supported yet" % URLParseResult.scheme )
         else:
             self.URL = URL
-            for k,v in attributes.iteritems():
+            for k, v in attributes.items(): # .iteritems() not python3 compat
                 if k not in self.__dict__:
                     self.__dict__[k] = v
 
@@ -103,7 +108,7 @@ class PypeObject(object):
     def _RDFGraph(self):
         graph = Graph()
 
-        for k, v in self.__dict__.iteritems():
+        for k, v in self.__dict__.items():
             if k == "URL": continue
             if k[0] == "_": continue
             if hasattr(v, "URL"):
@@ -132,10 +137,10 @@ def runShellCmd(args, **kwargs):
 
     p = Popen(args, **kwargs)
     pStatus = None
-    while 1:
+    while True:
         time.sleep(0.2)
         pStatus = p.poll()
-        if pStatus != None:
+        if pStatus is not None:
             break
     return pStatus
 
@@ -150,9 +155,14 @@ def runSgeSyncJob(args):
 
     p = Popen(args)
     pStatus = None
-    while 1:
+    while True:
         time.sleep(0.1)
         pStatus = p.poll()
-        if pStatus != None:
+        if pStatus is not None:
             break
     return pStatus
+
+
+# CHANGELOG:
+# * dict.iter*() methods converted to their non-iter equivalents for python3
+#   compatibility. See: https://docs.python.org/3.0/whatsnew/3.0.html

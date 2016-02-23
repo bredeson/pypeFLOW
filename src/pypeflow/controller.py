@@ -32,7 +32,6 @@ import multiprocessing
 import threading 
 import time 
 import logging
-import Queue
 from cStringIO import StringIO 
 from urlparse import urlparse
 
@@ -41,6 +40,16 @@ from common import PypeError, PypeObject, Graph, URIRef, pypeNS
 from data import PypeDataObjectBase, PypeSplittableLocalFile
 from task import PypeTaskBase, PypeTaskCollection, PypeThreadTaskBase, getFOFNMapTasks
 from task import TaskInitialized, TaskDone, TaskFail
+
+PYTHONVERSION = sys.version_info[:2]
+if PYTHONVERSION < (3,0):
+    from __future__ import print_function
+
+if PYTHONVERSION < (3,0):
+    import Queue
+else:
+    import queue as Queue
+
 
 logger = logging.getLogger(__name__)
 
@@ -265,15 +274,15 @@ class PypeWorkflow(PypeObject):
         for taskObj in taskObjs:
             if isinstance(taskObj, PypeTaskCollection):
                 for subTaskObj in taskObj.getTasks() + taskObj.getScatterGatherTasks():
-                    self.addObjects(subTaskObj.inputDataObjs.values())
-                    self.addObjects(subTaskObj.outputDataObjs.values())
-                    self.addObjects(subTaskObj.mutableDataObjs.values())
+                    self.addObjects(list(subTaskObj.inputDataObjs.values()))
+                    self.addObjects(list(subTaskObj.outputDataObjs.values()))
+                    self.addObjects(list(subTaskObj.mutableDataObjs.values()))
                     self.addObject(subTaskObj)
 
             else:
-                for dObj in taskObj.inputDataObjs.values() +\
-                            taskObj.outputDataObjs.values() +\
-                            taskObj.mutableDataObjs.values() :
+                for dObj in list(taskObj.inputDataObjs.values()) +\
+                            list(taskObj.outputDataObjs.values()) +\
+                            list(taskObj.mutableDataObjs.values()) :
                     if isinstance(dObj, PypeSplittableLocalFile):
                         self.addObjects([dObj._completeFile])
 
@@ -597,7 +606,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
         except:
             self.shutdown_event.set()
             logger.exception("Any exception caught in RefreshTargets() indicates an unrecoverable error. Shutting down...")
-            print()
+            print() # PEP 3105
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             print("! Please wait for all threads / processes to terminate !")
             print("! Also, maybe use 'ps' or 'qstat' to check all threads,!")
@@ -671,8 +680,8 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 if self.jobStatusMap[URL] != TaskInitialized:
                     continue
                 logger.debug(" #outputDataObjs: %d; #mutableDataObjs: %d" %(
-                    len(taskObj.outputDataObjs.values()),
-                    len(taskObj.mutableDataObjs.values()),
+                    len(list(taskObj.outputDataObjs.values())),
+                    len(list(taskObj.mutableDataObjs.values())),
                     ))
                 prereqJobURLs = prereqJobURLMap[URL]
 
@@ -731,7 +740,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
 
             logger.debug( "#jobsReadyToBeSubmitted: %d" % len(jobsReadyToBeSubmitted) )
 
-            numAliveThreads = self.thread_handler.alive(task2thread.values())
+            numAliveThreads = self.thread_handler.alive(list(task2thread.values()))
             #better job status detection, messageQueue should be empty and all return condition should be "done", or "fail"
             if numAliveThreads == 0 and len(jobsReadyToBeSubmitted) == 0 and self.messageQueue.empty(): 
                 logger.info( "_refreshTargets() finished with no thread running and no new job to submit" )
@@ -760,7 +769,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                     break
 
             logger.debug( "Total # of running threads: %d; alive tasks: %d; sleep=%f" % (
-                threading.activeCount(), self.thread_handler.alive(task2thread.values()), sleep_time) )
+                threading.activeCount(), self.thread_handler.alive(list(task2thread.values())), sleep_time) )
 
             time.sleep(sleep_time)
             if updateFreq is not None:
@@ -817,7 +826,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                 else:
                     logger.warning("Got unexpected message %r from URL %r." %(message, URL))
 
-            for u,s in sorted(self.jobStatusMap.items()):
+            for u, s in sorted(self.jobStatusMap.items()):
                 logger.debug("task status: %r, %r, used slots: %d" % (str(u),str(s), self._pypeObjects[str(u)].nSlots))
 
             if failedJobCount != 0 and (exitOnFailure or succeededJobCount == 0):

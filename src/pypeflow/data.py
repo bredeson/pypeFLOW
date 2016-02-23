@@ -64,7 +64,7 @@ class PypeDataObjectBase(PypeObject):
 
     @property
     def timeStamp(self):
-        raise NotImplementedError, self.__expr__()
+        raise NotImplementedError(self.__expr__())
 
     @property
     def isMutable(self):
@@ -141,8 +141,8 @@ class PypeLocalFile(PypeDataObjectBase):
     @property
     def path(self):
         if self._path == None:
-            raise IOError, "Must resolve this file (%s) with a context " + \
-                            "before you can access .path"
+            raise IOError("Must resolve this file (%s) with a context " + \
+                          "before you can access .path")
         return self._path
     
     def clean(self):
@@ -194,7 +194,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
 
     def addLocalFile(self, pLocalFile):
         if not isinstance(pLocalFile, PypeLocalFile):
-            raise TypeMismatchError, "only PypeLocalFile object can be added into PypeLocalFileColletion"
+            raise TypeMismatchError("only PypeLocalFile object can be added into PypeLocalFileColletion")
         self.localFiles.append(pLocalFile)
         if self.select == 1:
             self.localFileName = self.localFiles[0].localFileName
@@ -203,7 +203,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
     @property
     def timeStamp(self):
         if self.localFileName == None:
-            raise PypeError, "No PypeLocalFile is added into the PypeLocalFileColletion yet"
+            raise PypeError("No PypeLocalFile is added into the PypeLocalFileColletion yet")
         if not os.path.exists(self.localFileName):
             raise FileNotExistError("No such file:%s on %s" % (self.localFileName, platform.node()) )
         return os.stat(self.localFileName).st_mtime 
@@ -211,7 +211,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
     @property
     def exists(self):
         if self.localFileName == None:
-            raise PypeError, "No PypeLocalFile is added into the PypeLocalFileColletion yet"
+            raise PypeError("No PypeLocalFile is added into the PypeLocalFileColletion yet")
         return os.path.exists(self.localFileName)
         
 

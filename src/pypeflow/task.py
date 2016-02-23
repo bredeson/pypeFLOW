@@ -35,9 +35,16 @@ import hashlib
 import logging
 import copy
 import sys
+import os
+import shlex
+
+from common import PypeError, PypeObject, pypeNS, runShellCmd, Graph, URIRef, Literal
+from data import FileNotExistError, PypeSplittableLocalFile, makePypeLocalFile
+
 
 PYTHONVERSION = sys.version_info[:2]
 if PYTHONVERSION  < (3,0):
+    from __future__ import print_function
     range = xrange
 
 if PYTHONVERSION == (2,5):
@@ -45,11 +52,6 @@ if PYTHONVERSION == (2,5):
 else:
     import json
 
-import os
-import shlex
-
-from common import PypeError, PypeObject, pypeNS, runShellCmd, Graph, URIRef, Literal
-from data import FileNotExistError, PypeSplittableLocalFile, makePypeLocalFile
 
 logger = logging.getLogger(__name__)
 
@@ -169,9 +171,9 @@ class PypeTaskBase(PypeObject):
         The method to run the decorated function _taskFun(). It is called through run() of
         the PypeTask object and it should never be called directly
 
-        TODO: the arg porcessing is still a mess, need to find a better way to do this 
+        TODO: the arg processing is still a mess, need to find a better way to do this 
         """
-        if PYTHONVERSION == (2,5): #TODO(CD): Does this even work anymore?
+        if PYTHONVERSION == (2,5) or : #TODO(CD): Does this even work anymore?
             (args, varargs, varkw, defaults)  = inspect.getargspec(self._taskFun)
             #print(args, varargs, varkw, defaults)
         else:
