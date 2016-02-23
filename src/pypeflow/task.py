@@ -29,11 +29,6 @@ a regular python funtion into a PypeTask instance.
 
 """
 
-# try:
-#     from __future__ import print_function
-# except:
-#     pass
-
 import pprint
 import inspect
 import hashlib
@@ -48,7 +43,7 @@ from data import FileNotExistError, PypeSplittableLocalFile, makePypeLocalFile
 
 
 PYTHONVERSION = sys.version_info[:2]
-if PYTHONVERSION  < (3,0):
+if PYTHONVERSION < (3,0):
     range = xrange
 
 if PYTHONVERSION == (2,5):
@@ -123,7 +118,7 @@ class PypeTaskBase(PypeObject):
 
         for o in self.outputDataObjs.values():
             if o.readOnly is True:
-                raise PypeError, "Cannot assign read only data object %s for task %s" % (o.URL, self.URL) 
+                raise PypeError("Cannot assign read only data object %s for task %s" % (o.URL, self.URL))
         
     @property
     def status(self):
@@ -184,13 +179,13 @@ class PypeTaskBase(PypeObject):
             argspec = inspect.getargspec(self._taskFun)
             (args, varargs, varkw, defaults) = argspec.args, argspec.varargs, argspec.keywords, argspec.defaults
 
-        if varkw != None:
+        if varkw is not None:
             return self._taskFun(self, *argv, **kwargv)
-        elif varargs != None:
+        elif varargs is not None:
             return self._taskFun(self, *argv)
         elif len(args) != 0:
             nkwarg = {}
-            if defaults != None:
+            if defaults is not None:
                 defaultArg = args[-len(defaults):]
                 for a in defaultArg:
                     nkwarg[a] = kwargv[a]
@@ -361,7 +356,7 @@ class PypeThreadTaskBase(PypeTaskBase):
         back to the main thread that run this task in a sepearated thread through the standard python
         queue from the Queue module.
         """
-        if self._queue == None:
+        if self._queue is None:
             logger.debug('Testing threads w/out queue?')
             self.run(*argv, **kwargv)
             # return
@@ -536,7 +531,7 @@ def PypeTask(*argv, **kwargv):
 
         kwargv["_taskFun"] = taskFun
 
-        if kwargv.get("URL",None) == None:
+        if kwargv.get("URL",None) is None:
             kwargv["URL"] = _auto_task_url(taskFun)
         try:
             kwargv["_codeMD5digest"] = hashlib.md5(inspect.getsource(taskFun)).hexdigest()
@@ -647,6 +642,7 @@ def PypeSGETask(*argv, **kwargv):
 
     return f
 
+
 def PypeDistributibleTask(*argv, **kwargv):
 
     """
@@ -688,27 +684,27 @@ def PypeScatteredTasks(*argv, **kwargv):
         nChunk = None
         scatteredInput  = []
 
-        if kwargv.get("URL", None) == None:
+        if kwargv.get("URL", None) is None:
             kwargv["URL"] = "tasks://" + inspect.getfile(taskFun) + "/"+ taskFun.func_name
 
         tasks = PypeTaskCollection(kwargv["URL"])
 
         for inputKey, inputDO in inputDataObjs.items():
             if hasattr(inputDO, "nChunk"):
-                if nChunk != None:
+                if nChunk is not None:
                     assert inputDO.nChunk == nChunk
                 else:
                     nChunk = inputDO.nChunk
-                    if inputDO.getScatterTask() != None:
+                    if inputDO.getScatterTask() is not None:
                         tasks.addScatterGatherTask( inputDO.getScatterTask() )
 
                 scatteredInput.append( inputKey )
 
         for outputKey, outputDO in outputDataObjs.items():
             if hasattr(outputDO, "nChunk"):
-                if nChunk != None:
+                if nChunk is not None:
                     assert outputDO.nChunk == nChunk
-                    if outputDO.getGatherTask() != None:
+                    if outputDO.getGatherTask() is not None:
                         tasks.addScatterGatherTask( outputDO.getGatherTask() )
                 else:
                     nChunk = outputDO.nChunk
@@ -750,7 +746,9 @@ def PypeScatteredTasks(*argv, **kwargv):
         return tasks
     return f
 
+
 getPypeScatteredTasks = PypeScatteredTasks
+
 
 def PypeFOFNMapTasks(*argv, **kwargv):
     """
@@ -786,7 +784,7 @@ def PypeFOFNMapTasks(*argv, **kwargv):
         FOFNFileName = kwargv["FOFNFileName"]
         outTemplateFunc = kwargv["outTemplateFunc"]
 
-        if kwargv.get("URL", None) == None:
+        if kwargv.get("URL", None) is None:
             kwargv["URL"] = "tasks://" + inspect.getfile(taskFun) + "/"+ taskFun.func_name
 
         tasks = PypeTaskCollection(kwargv["URL"])
@@ -836,7 +834,9 @@ def PypeFOFNMapTasks(*argv, **kwargv):
 
     return f
 
+
 getFOFNMapTasks = PypeFOFNMapTasks
+
 
 def timeStampCompare( inputDataObjs, outputDataObjs, parameters) :
 

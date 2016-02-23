@@ -34,7 +34,6 @@ import platform
 from common import pypeNS, PypeObject, PypeError, NotImplementedError
 
 logger = logging.getLogger(__name__)
-
 PYTHONVERSION = sys.version_info[:2]
 
 if PYTHONVERSION < (3,0):
@@ -48,11 +47,14 @@ else:
 class FileNotExistError(PypeError):
     pass
 
+
 class TypeMismatchError(PypeError):
     pass
 
+
 def fn(obj):
     return obj.localFileName
+
 
 class PypeDataObjectBase(PypeObject):
     
@@ -65,32 +67,40 @@ class PypeDataObjectBase(PypeObject):
         self.verification = []
         self._mutatble = False
 
+
     @property
     def timeStamp(self):
-        raise NotImplementedError(self.__expr__())
+        raise NotImplementedError(self.__expr__()) 
+
 
     @property
     def isMutable(self):
         return self._mutatble
 
+
     @property
     def exists(self):
         raise NotImplementedError
 
+
     def addVerifyFunction( self, verifyFunction ):
         self.verification.append( verifyFunction )
 
+
     def __str__( self ):
         return self.URL
+
 
     def _updateURL(self, newURL):
         super(PypeDataObjectBase, self)._updateURL(newURL)
         self._updatePath()
 
+
     def _updatePath(self):
         URLParseResult = urlparse(self.URL)
         self.localFileName = URLParseResult.path
         self._path = self.localFileName #for local file, _path is the same as full local file name
+
 
 class PypeLocalFile(PypeDataObjectBase):
 
@@ -108,12 +118,17 @@ class PypeLocalFile(PypeDataObjectBase):
     True
     """
     def __repr__(self): return "PypeLocalFile(%r, %r)" %(self.URL, self._path)
+
+
     supportedURLScheme = ["file", "state"]
+
+
     def __init__(self, URL, readOnly = False, **attributes):
         PypeDataObjectBase.__init__(self, URL, **attributes)
         self._updatePath()
         self.readOnly = readOnly
         self._mutable = attributes.get("mutable", False)
+
 
     @property
     def timeStamp(self):
@@ -121,9 +136,11 @@ class PypeLocalFile(PypeDataObjectBase):
             raise FileNotExistError("No such file:%s on %s" % (self.localFileName, platform.node()) )
         return os.stat(self.localFileName).st_mtime 
 
+
     @property
     def exists(self):
         return os.path.exists(self.localFileName)
+
     
     def verify(self):
         logger.debug("Verifying contents of %s" % self.URL)
@@ -140,6 +157,7 @@ class PypeLocalFile(PypeDataObjectBase):
             for e in errors:
                 logger.error(e)
         return errors
+
     
     @property
     def path(self):
@@ -148,6 +166,7 @@ class PypeLocalFile(PypeDataObjectBase):
                           "before you can access .path")
         return self._path
     
+
     def clean(self):
         if os.path.exists( self.path ):
             logger.info("Removing %s" % self.path )
@@ -155,6 +174,7 @@ class PypeLocalFile(PypeDataObjectBase):
                 shutil.rmtree( self.path )
             else:
                 os.remove( self.path )
+
 
 class PypeHDF5Dataset(PypeDataObjectBase):  #stub for now Mar 17, 2010
 
@@ -180,6 +200,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
     """
 
     supportedURLScheme = ["files"]
+
     def __init__(self, URL, readOnly = False, select = 1, **attributes):
         """
            currently we only support select = 1, 
@@ -195,6 +216,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
         self.localFiles = [] # a list of all files within the obj
         self.select = select
 
+
     def addLocalFile(self, pLocalFile):
         if not isinstance(pLocalFile, PypeLocalFile):
             raise TypeMismatchError("only PypeLocalFile object can be added into PypeLocalFileColletion")
@@ -203,6 +225,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
             self.localFileName = self.localFiles[0].localFileName
             self._path = self.localFileName
 
+
     @property
     def timeStamp(self):
         if self.localFileName == None:
@@ -210,6 +233,7 @@ class PypeLocalFileCollection(PypeDataObjectBase):  #stub for now Mar 17, 2010
         if not os.path.exists(self.localFileName):
             raise FileNotExistError("No such file:%s on %s" % (self.localFileName, platform.node()) )
         return os.stat(self.localFileName).st_mtime 
+
 
     @property
     def exists(self):
@@ -231,6 +255,7 @@ class PypeSplittableLocalFile(PypeDataObjectBase):
       Namely, the whole file representation is not used any place else.
     * One can not specify scatter task and gather task for the same object since it will create
     """
+
     supportedURLScheme = ["splittablefile"]
 
     def __init__(self, URL, readOnly = False, nChunk = 1, **attributes):
@@ -260,6 +285,7 @@ class PypeSplittableLocalFile(PypeDataObjectBase):
             subfile = PypeLocalFile(chunkURL, readOnly, **attributes)
             self._splittedFiles.append(subfile) 
 
+
     def setGatherTask(self, TaskCreator, TaskType, function):
         assert self._scatterTask == None
         inputDataObjs = dict( ( ("subfile%03d" % c[0], c[1]) 
@@ -270,6 +296,7 @@ class PypeSplittableLocalFile(PypeDataObjectBase):
                                   URL = "task://gather/%s" % self._path ,
                                   TaskType=TaskType) ( function )
         self._gatherTask = gatherTask
+
 
     def setScatterTask(self, TaskCreator, TaskType, function):
         assert self._gatherTask == None
@@ -282,18 +309,23 @@ class PypeSplittableLocalFile(PypeDataObjectBase):
                                    TaskType=TaskType) ( function )
         self._scatterTask = scatterTask
 
+
     def getGatherTask(self):
         return self._gatherTask
+
 
     def getScatterTask(self):
         return self._scatterTask
 
+
     def getSplittedFiles(self):
         return self._splittedFiles
+
 
     @property
     def timeStamp(self):
         return self._completeFile.timeStamp
+
 
 def makePypeLocalFile(aLocalFileName, readOnly = False, scheme="file", **attributes):
     """
@@ -310,12 +342,18 @@ def makePypeLocalFile(aLocalFileName, readOnly = False, scheme="file", **attribu
     
     return PypeLocalFile("%s://localhost%s" % (scheme, aLocalFileName), readOnly, **attributes)
 
+
 def makePypeLocalStateFile(stateName, readOnly = False, **attributes):
     dirname, basename  = os.path.split(stateName)
     stateFileName = os.path.join(dirname, "."+basename)
     return makePypeLocalFile( stateFileName, readOnly = readOnly, scheme = "state", **attributes)
 
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
     
+# CHANGELOG:
+# * urlparse moved to urllib.parse in py3
+# * range redef'd with xrange

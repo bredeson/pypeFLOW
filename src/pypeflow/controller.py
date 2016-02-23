@@ -40,7 +40,6 @@ from data import PypeDataObjectBase, PypeSplittableLocalFile
 from task import PypeTaskBase, PypeTaskCollection, PypeThreadTaskBase, getFOFNMapTasks
 from task import TaskInitialized, TaskDone, TaskFail
 
-
 logger = logging.getLogger(__name__)
 PYTHONVERSION = sys.version_info[:2]
 
@@ -53,7 +52,6 @@ else:
     import queue as Queue
     from io import StringIO 
     from urllib.parse import urlparse
-
 
 
 class TaskExecutionError(PypeError):

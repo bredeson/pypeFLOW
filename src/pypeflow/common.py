@@ -49,7 +49,6 @@ from rdflib import URIRef
 from subprocess import Popen, PIPE
 
 pypeNS = Namespace("pype://v0.1/")
-
 PYTHONVERSION = sys.version_info[:2]
 
 if PYTHONVERSION < (3,0):
@@ -98,7 +97,7 @@ class PypeObject(object):
             raise URLSchemeNotSupportYet("%s is not supported yet" % URLParseResult.scheme )
         else:
             self.URL = URL
-            for k, v in attributes.items(): # .iteritems() not python3 compat
+            for k, v in attributes.items(): # .iteritems() not py3 compat
                 if k not in self.__dict__:
                     self.__dict__[k] = v
 
@@ -107,7 +106,8 @@ class PypeObject(object):
         URLParseResult = urlparse(self.URL)
         newURLParseResult = urlparse(newURL)
         if URLParseResult.scheme != newURLParseResult.scheme:
-            raise PypeError("the URL scheme can not be changed for obj %s" % self.URL)
+            # See PEP 3110 on raise syntax:
+            raise PypeError("the URL scheme can not be changed for obj %s" % self.URL) 
         self.URL = newURL
 
      
@@ -173,3 +173,5 @@ def runSgeSyncJob(args):
 # CHANGELOG:
 # * dict.iter*() methods converted to their non-iter equivalents for python3
 #   compatibility. See: https://docs.python.org/3.0/whatsnew/3.0.html
+# * urlparse moved to urllib in py3
+# * See PEP 3110 and raise
