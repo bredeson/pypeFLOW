@@ -28,18 +28,21 @@ PypeData: This module defines the general interface and class for PypeData Objec
 
 """
 
-
-from urlparse import urlparse, urljoin
-import platform
 import os, sys, shutil
-from common import pypeNS, PypeObject, PypeError, NotImplementedError
 import logging
+import platform
+from common import pypeNS, PypeObject, PypeError, NotImplementedError
 
 logger = logging.getLogger(__name__)
 
 PYTHONVERSION = sys.version_info[:2]
+
 if PYTHONVERSION < (3,0):
     range = xrange
+    from urlparse import urlparse, urljoin
+else:
+    from urllib.parse import urlparse, urljoin
+
     
 
 class FileNotExistError(PypeError):
@@ -131,7 +134,7 @@ class PypeLocalFile(PypeDataObjectBase):
         for verifyFn in self.verification:
             try:
                 errors.extend( verifyFn(self.path) )
-            except Exception, e:
+            except Exception as e:
                 errors.append( str(e) )
         if len(errors) > 0:
             for e in errors:

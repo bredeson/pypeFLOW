@@ -29,6 +29,11 @@ a regular python funtion into a PypeTask instance.
 
 """
 
+# try:
+#     from __future__ import print_function
+# except:
+#     pass
+
 import pprint
 import inspect
 import hashlib
@@ -44,7 +49,6 @@ from data import FileNotExistError, PypeSplittableLocalFile, makePypeLocalFile
 
 PYTHONVERSION = sys.version_info[:2]
 if PYTHONVERSION  < (3,0):
-    from __future__ import print_function
     range = xrange
 
 if PYTHONVERSION == (2,5):
@@ -173,7 +177,7 @@ class PypeTaskBase(PypeObject):
 
         TODO: the arg processing is still a mess, need to find a better way to do this 
         """
-        if PYTHONVERSION == (2,5) or : #TODO(CD): Does this even work anymore?
+        if PYTHONVERSION == (2,5): #TODO(CD): Does this even work anymore?
             (args, varargs, varkw, defaults)  = inspect.getargspec(self._taskFun)
             #print(args, varargs, varkw, defaults)
         else:

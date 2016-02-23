@@ -32,8 +32,7 @@ import multiprocessing
 import threading 
 import time 
 import logging
-from cStringIO import StringIO 
-from urlparse import urlparse
+
 
 # TODO(CD): When we stop using Python 2.5, use relative-imports and remove this dir from PYTHONPATH.
 from common import PypeError, PypeObject, Graph, URIRef, pypeNS
@@ -41,17 +40,21 @@ from data import PypeDataObjectBase, PypeSplittableLocalFile
 from task import PypeTaskBase, PypeTaskCollection, PypeThreadTaskBase, getFOFNMapTasks
 from task import TaskInitialized, TaskDone, TaskFail
 
+
+logger = logging.getLogger(__name__)
 PYTHONVERSION = sys.version_info[:2]
-if PYTHONVERSION < (3,0):
-    from __future__ import print_function
 
 if PYTHONVERSION < (3,0):
     import Queue
+    from cStringIO import StringIO
+    from urlparse import urlparse
+
 else:
     import queue as Queue
+    from io import StringIO 
+    from urllib.parse import urlparse
 
 
-logger = logging.getLogger(__name__)
 
 class TaskExecutionError(PypeError):
     pass
@@ -325,7 +328,7 @@ class PypeWorkflow(PypeObject):
     def _RDFGraph(self):
         # expensive to recompute
         graph = Graph()
-        for URL, obj in self._pypeObjects.iteritems():
+        for URL, obj in self._pypeObjects.items():
             for s,p,o in obj._RDFGraph:
                 graph.add( (s, p, o) )
 
@@ -416,12 +419,12 @@ class PypeWorkflow(PypeObject):
             outputFiles = taskObj.outputDataObjs
             #for oStr in [o.localFileName for o in outputFiles.values()]:
             if True:
-                oStr = " ".join( [o.localFileName for o in outputFiles.values()])
-                iStr = " ".join([i.localFileName for i in inputFiles.values()])
+                oStr = " ".join([ o.localFileName for o in outputFiles.values() ])
+                iStr = " ".join([ i.localFileName for i in inputFiles.values() ])
                 makeStr.write( "%s:%s\n" % ( oStr, iStr ) )
                 makeStr.write( "\t%s\n\n" % taskObj.script )
 
-        makeStr.write("all: %s" %  " ".join([o.localFileName for o in outputFiles.values()]) )
+        makeStr.write("all: %s" %  " ".join([ o.localFileName for o in outputFiles.values() ]) )
 
         return makeStr.getvalue()
 
@@ -465,20 +468,22 @@ class PypeWorkflow(PypeObject):
 
 
     def _runCallback(self, callback = (None, None, None) ):
-        if callback[0] is not None and callable(callback[0]):
+        # callable() method removed in python 3.0 and 3.1, but came back in 3.2;
+        # use hasattr() instead to check for '__call__' attribute:
+        if callback[0] is not None and hasattr( callback[0], '__call__' ):
             argv = []
             kwargv = {}
-            if callback[1] is not None and isinstance( callback[1], type(list()) ):
+            if callback[1] is not None and isinstance( callback[1], list ):
                 argv = callback[1]
 
             else:
-                raise TaskExecutionError( "callback argument type error") 
+                raise TaskExecutionError("callback argument type error") 
 
-            if callback[2] is not None and isinstance( callback[1], type(dict()) ):
+            if callback[2] is not None and isinstance( callback[1], dict ):
                 kwargv = callback[2]
 
             else:
-                raise TaskExecutionError( "callback argument type error") 
+                raise TaskExecutionError("callback argument type error") 
 
             callback[0](*argv, **kwargv)
 
@@ -582,6 +587,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
                         raise TaskTypeError("Only PypeThreadTask can be added into a PypeThreadWorkflow. The task object %s has type %s " % (subTaskObj.URL, repr(type(subTaskObj))))
                     subTaskObj.setMessageQueue(self.messageQueue)
                     subTaskObj.setShutdownEvent(self.shutdown_event)
+
             else:
                 if not isinstance(taskObj, PypeThreadTaskBase):
                     raise TaskTypeError("Only PypeThreadTask can be added into a PypeThreadWorkflow. The task object has type %s " % repr(type(taskObj)))
@@ -606,7 +612,7 @@ class _PypeConcurrentWorkflow(PypeWorkflow):
         except:
             self.shutdown_event.set()
             logger.exception("Any exception caught in RefreshTargets() indicates an unrecoverable error. Shutting down...")
-            print() # PEP 3105
+            print() # See PEP 3105
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             print("! Please wait for all threads / processes to terminate !")
             print("! Also, maybe use 'ps' or 'qstat' to check all threads,!")

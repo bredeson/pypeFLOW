@@ -29,8 +29,8 @@ PypeCommon: provide the common base classes and general module level utility fun
 
 """
 
-from urlparse import urlparse
-
+import sys
+import time
 import rdflib
 try:
     from rdflib import ConjunctiveGraph as Graph #work for rdflib-3.1.0
@@ -39,16 +39,23 @@ try:
                            'rdfextras.sparql.processor', 'Processor')
     rdflib.plugin.register('sparql', rdflib.query.Result,
                            'rdfextras.sparql.query', 'SPARQLQueryResult')
+
 except Exception:
     from rdflib.Graph import ConjunctiveGraph as Graph #work for rdflib-2.4.2
+
 from rdflib import Namespace
 from rdflib import Literal
 from rdflib import URIRef
-
 from subprocess import Popen, PIPE
-import time
 
 pypeNS = Namespace("pype://v0.1/")
+
+PYTHONVERSION = sys.version_info[:2]
+
+if PYTHONVERSION < (3,0):
+    from urlparse import urlparse, urljoin
+else:
+    from urllib.parse import urlparse, urljoin
 
 
 
